@@ -1,17 +1,9 @@
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
 # Copyright (C) 2019 Yunzhi Shi @ The University of Texas at Austin.
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# All rights reserved.
+# Distributed under the (new) BSD License. See LICENSE.txt for more info.
+# -----------------------------------------------------------------------------
 
 """ Simple demonstration of the new 3D visualization tool for Madagascar.
 The program displays x-, y-, z- slices of a numpy array in 3D, allows user
@@ -45,7 +37,8 @@ if __name__ == '__main__':
   #   # x_pos=32, y_pos=25, z_pos=93)
   #   x_pos=[370, 170, 570, 770], y_pos=810, z_pos=120)
   # xyz_axis = XYZAxis()
-  # colorbar = Colorbar(cmap=cmap, clim=clim, label_str='Seismic Amplitude')
+  # colorbar = Colorbar(cmap=cmap, clim=clim, label_str='Seismic Amplitude',
+  #                     label_size=8, tick_size=6)
 
 
   # Test 2: brain CT data.
@@ -59,7 +52,7 @@ if __name__ == '__main__':
     seismic_coord_system=False)
   xyz_axis = XYZAxis(seismic_coord_system=False)
   colorbar = Colorbar(cmap='grays', clim=(volume.min(), volume.max()),
-                      label_str='Amplitude')
+                      label_str='Amplitude', label_size=8, tick_size=6)
 
 
   # Run the canvas.
@@ -77,7 +70,7 @@ if __name__ == '__main__':
                          fov=30,
                          elevation=36,
                          azimuth=45,
-                         zoom_factor=2.2 # >1: zoom in; <1: zoom out
+                         zoom_factor=1.2 # >1: zoom in; <1: zoom out
                          )
   canvas.measure_fps()
   canvas.app.run()

@@ -1,17 +1,9 @@
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
 # Copyright (C) 2019 Yunzhi Shi @ The University of Texas at Austin.
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# All rights reserved.
+# Distributed under the (new) BSD License. See LICENSE.txt for more info.
+# -----------------------------------------------------------------------------
 
 """ A utility function to read in skin files from the research: 'Optimal
 Surface Voting': https://github.com/xinwucwp/osv.
@@ -93,9 +85,8 @@ class FaultSkin(object):
       dip = param[5]
       slip = (param[8], param[7], param[6]) # reverse the zyx order to xyz
 
-      cell = FaultCell(i, pos=pos, likelihood=likelihood,
-                       strike=strike, dip=dip, slip=slip)
-      self.cells.append(cell)
+      self.cells.append(FaultCell(i, pos=pos, likelihood=likelihood,
+                                  strike=strike, dip=dip, slip=slip))
 
     # Read cell neighbor indexes in chunk.
     fmt = '>{:d}i'.format(4 * num_cells) # 4 neighbor indexes per cell
@@ -103,19 +94,18 @@ class FaultSkin(object):
 
     # Get the neighboring cell index for each cell.
     for i in range(num_cells):
-      neighbor = cell_neighbors[4*i: 4*(i+1)]
       # Neighbor above current cell.
-      if neighbor[0] < 0: self.cells[i].above = None
-      else: self.cells[i].above = self.cells[neighbor[0]]
+      if cell_neighbors[4*i] >= 0:
+        self.cells[i].above = self.cells[cell_neighbors[4*i]]
       # Neighbor below current cell.
-      if neighbor[1] < 0: self.cells[i].below = None
-      else: self.cells[i].below = self.cells[neighbor[1]]
+      if cell_neighbors[4*i+1] >= 0:
+        self.cells[i].below = self.cells[cell_neighbors[4*i+1]]
       # Neighbor to the left of current cell.
-      if neighbor[2] < 0: self.cells[i].left = None
-      else: self.cells[i].left = self.cells[neighbor[2]]
+      if cell_neighbors[4*i+2] >= 0:
+        self.cells[i].left = self.cells[cell_neighbors[4*i+2]]
       # Neighbor to the right of current cell.
-      if neighbor[3] < 0: self.cells[i].right = None
-      else: self.cells[i].right = self.cells[neighbor[3]]
+      if cell_neighbors[4*i+3] >= 0:
+        self.cells[i].right = self.cells[cell_neighbors[4*i+3]]
 
     self.f.close()
 

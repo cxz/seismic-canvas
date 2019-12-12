@@ -1,17 +1,9 @@
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
 # Copyright (C) 2019 Yunzhi Shi @ The University of Texas at Austin.
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# All rights reserved.
+# Distributed under the (new) BSD License. See LICENSE.txt for more info.
+# -----------------------------------------------------------------------------
 
 """ A demonstration of the new 3D visualization tool applied to the research
 'Optimal Surface Voting': https://github.com/xinwucwp/osv.
@@ -21,7 +13,7 @@ import os
 import numpy as np
 from vispy import app
 from vispy.color import get_colormap, Colormap, Color
-from vispy.scene.visuals import Mesh
+from vispy.scene.visuals import Mesh, Markers
 
 from seismic_canvas import (SeismicCanvas, volume_slices, XYZAxis, Colorbar)
 from osv_read_skin import FaultSkin
@@ -144,20 +136,41 @@ if __name__ == '__main__':
   colorbar = Colorbar(cmap=voting_cmap, clim=voting_range,
                       label_str='Voting Scores', size=colorbar_size)
 
+  # Test well log visualization!
+  n_log_samples = 500
+  # Get X coordinates by Random walking.
+  well_x = 200 * np.ones(n_log_samples)
+  delta_x = 0.3 * np.random.randn(n_log_samples)
+  well_x += np.cumsum(delta_x)
+  # Get Y and Z coordinates.
+  well_y = 100 * np.ones(n_log_samples)
+  well_z = np.linspace(0, 80, n_log_samples)
+  # Concate X, Y, and Z coordinates.
+  well_log_coords = np.stack((well_x, well_y, well_z), axis=1)
+  # Get well log colors.
+  cmap = get_colormap('hsl')
+  values = np.random.uniform(-1.5, 2.5, n_log_samples)
+  values = np.convolve(values, np.ones((20,))/20, mode='same')
+  well_log_colors = np.array([cmap.map(x) for x in values]).squeeze()
+  well_log = Markers(pos=well_log_coords, symbol='hbar', size=15,
+    face_color=well_log_colors, edge_width=0)
+
   canvas4 = SeismicCanvas(title='Voting Scores',
-                          visual_nodes=visual_nodes,
+                          visual_nodes=visual_nodes + [well_log],
                           xyz_axis=xyz_axis,
                           colorbar=colorbar,
                           **canvas_params)
 
 
   # Image 5: seismic with fault skin surfaces (meshes).
-  fault_surfaces = []
   fault_cmap = 'hsl'
   fault_range = (0, 180)
 
   # Read from skin files using FaultSkin class.
   skin_dir = './F3_fault_skins'
+  all_verts = None
+  all_faces = None
+  all_strikes = None
   for filename in os.listdir(skin_dir):
     if filename.startswith('skin') and filename.endswith('.dat'):
       skin = FaultSkin(os.path.join(skin_dir, filename))
@@ -172,14 +185,24 @@ if __name__ == '__main__':
         if strike > 180: strike = 360 - strike
         strikes[i] = strike
 
-      fault_surface = Mesh(verts, faces,
-        vertex_values=strikes, shading='smooth')
-      fault_surface.cmap = fault_cmap
-      fault_surface.clim = fault_range
-      fault_surface.shininess = 0.01
-      fault_surface.ambient_light_color = Color([.2, .2, .2, 1])
-      fault_surface.light_dir = (5, -10, 5)
-      fault_surfaces.append(fault_surface)
+      # Append to all collected verts/faces/values.
+      if all_verts is None:
+        all_verts = verts
+        all_faces = faces
+        all_strikes = strikes
+      else:
+        faces += all_verts.shape[0]
+        all_verts = np.concatenate((all_verts, verts))
+        all_faces = np.concatenate((all_faces, faces))
+        all_strikes = np.concatenate((all_strikes, strikes))
+
+  fault_surface = Mesh(all_verts, all_faces,
+    vertex_values=all_strikes, shading='smooth')
+  fault_surface.cmap = fault_cmap
+  fault_surface.clim = fault_range
+  fault_surface.shininess = 0.01
+  fault_surface.ambient_light_color = Color([.2, .2, .2, 1])
+  fault_surface.light_dir = (5, -10, 5)
 
   visual_nodes = volume_slices(seismic_vol,
     cmaps=seismic_cmap,
@@ -189,9 +212,8 @@ if __name__ == '__main__':
   colorbar = Colorbar(cmap=fault_cmap, clim=fault_range,
                       label_str='Fault Strike Angle', size=colorbar_size)
 
-  visual_nodes += fault_surfaces
   canvas5 = SeismicCanvas(title='Fault Surfaces',
-                          visual_nodes=visual_nodes,
+                          visual_nodes=visual_nodes + [fault_surface],
                           xyz_axis=xyz_axis,
                           colorbar=colorbar,
                           **canvas_params)
@@ -216,7 +238,8 @@ if __name__ == '__main__':
   xyz_axis = XYZAxis(seismic_coord_system=False) # try normal coord system
   colorbar = Colorbar(cmap=likelihood_cmap, clim=likelihood_range,
                       label_str='Fault Likelihood', size=colorbar_size,
-                      label_color='white') # dark background
+                      label_color='white', border_color='white'
+                      ) # dark background
 
   dark_canvas_params = canvas_params
   dark_canvas_params['bgcolor'] = (.1, .1, .1, 1) # dark background
